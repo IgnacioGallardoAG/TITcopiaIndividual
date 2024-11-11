@@ -5,6 +5,6 @@ const HorasSemanalesSchema = new mongoose.Schema({
     totalHorasTrabajadas: { type: Number, required: true },
     horasSemanalesMaximas: { type: Number, required: true },
     profesional: { type: mongoose.Schema.Types.ObjectId, ref: 'Profesional' }
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model('HorasSemanales', HorasSemanalesSchema);
