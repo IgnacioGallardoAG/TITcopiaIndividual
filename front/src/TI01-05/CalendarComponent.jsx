@@ -15,14 +15,13 @@ moment.locale('es');
 const localizer = momentLocalizer(moment);
 const DnDCalendar = withDragAndDrop(Calendar);
 
-function CalendarComponent() {
+function CalendarComponent({ profesionalId }) {
   const [events, setEvents] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newEvent, setNewEvent] = useState({ start: null, end: null });
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [totalHoursByWeek, setTotalHoursByWeek] = useState({});
   const [maxHoursByWeek, setMaxHoursByWeek] = useState({});
-  const [tempMaxHours, setTempMaxHours] = useState('');
   const [currentWeek, setCurrentWeek] = useState(moment().startOf('week'));
 
   // Función para obtener el ID de la semana
@@ -30,8 +29,12 @@ function CalendarComponent() {
 
   // Obtener horas semanales de HorasSemanales
   const fetchWeeklyHours = useCallback(async (weekId) => {
+    if (!profesionalId) return;  // Verificar que profesionalId esté definido
     try {
-      const res = await axios.get(`http://localhost:3000/api/horas-semanales/${weekId}`);
+      const res = await axios.get(`http://localhost:3000/api/horas-semanales/${weekId}`, {
+        params: { profesionalId },
+      });
+      
       if (res.status === 200) {
         setMaxHoursByWeek((prev) => ({ ...prev, [weekId]: res.data.horasSemanalesMaximas }));
         setTotalHoursByWeek((prev) => ({ ...prev, [weekId]: res.data.totalHorasTrabajadas }));
@@ -39,10 +42,12 @@ function CalendarComponent() {
     } catch (error) {
       console.error('Error al obtener las horas semanales:', error);
     }
-  }, []);
+  }, [profesionalId, getWeekId]);
 
   // Cargar sesiones (events) y horas semanales
   useEffect(() => {
+    if (!profesionalId) return;  // Solo cargar si profesionalId está definido
+
     const fetchEvents = async () => {
       try {
         const res = await axios.get('http://localhost:3000/api/sesiones');
@@ -57,29 +62,10 @@ function CalendarComponent() {
         console.error('Error al cargar sesiones', error);
       }
     };
+
     fetchEvents();
     fetchWeeklyHours(getWeekId(currentWeek));
-  }, [currentWeek, fetchWeeklyHours, getWeekId]);
-
-  // Actualizar límite de horas semanales en HorasSemanales
-  const handleUpdateMaxHours = useCallback(async () => {
-    const hoursInt = parseInt(tempMaxHours, 10);
-    if (hoursInt > 0 && hoursInt <= 40) {
-      const weekId = getWeekId(currentWeek);
-      try {
-        const res = await axios.post('http://localhost:3000/api/horas-semanales', {
-          weekId,
-          horasSemanalesMaximas: hoursInt,
-          totalHorasTrabajadas: totalHoursByWeek[weekId] || 0,
-        });
-        setMaxHoursByWeek((prev) => ({ ...prev, [weekId]: res.data.horasSemanalesMaximas }));
-      } catch (error) {
-        console.error('Error al actualizar las horas semanales:', error);
-      }
-    } else {
-      alert('Por favor ingrese un número de horas entre 1 y 40.');
-    }
-  }, [currentWeek, tempMaxHours, totalHoursByWeek, getWeekId]);
+  }, [currentWeek, fetchWeeklyHours, getWeekId, profesionalId]);
 
   // Manejo de selección de rango en el calendario
   const handleSelectSlot = ({ start, end }) => {
@@ -125,6 +111,7 @@ function CalendarComponent() {
         res = await axios.post('http://localhost:3000/api/sesiones', {
           start: moment(newEvent.start).utc().toDate(),
           end: moment(newEvent.end).utc().toDate(),
+          profesionalId,  // Incluye el profesionalId para registrar la sesión
         });
         setEvents([...events, res.data]);
       }
@@ -133,6 +120,7 @@ function CalendarComponent() {
         weekId,
         horasSemanalesMaximas: maxHoursByWeek[weekId],
         totalHorasTrabajadas: updatedTotalHours,
+        profesional: profesionalId,  // Incluye el profesionalId en el registro
       });
 
       setTotalHoursByWeek({ ...totalHoursByWeek, [weekId]: updatedTotalHours });
@@ -146,24 +134,6 @@ function CalendarComponent() {
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="w-full max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg">
-        <div>
-          <h2 className="text-center font-bold text-lg mb-4">Modificar Horas Semanales Permitidas</h2>
-          <input
-            type="number"
-            className="border p-2 rounded w-full"
-            value={tempMaxHours}
-            onChange={(e) => setTempMaxHours(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleUpdateMaxHours()}
-            placeholder="Ingresa las horas semanales (máx. 40)"
-          />
-          <button
-            className="bg-blue-500 text-white p-2 rounded mt-4"
-            onClick={handleUpdateMaxHours}
-          >
-            Actualizar Límite de Horas
-          </button>
-        </div>
-
         <div>
           <h2 className="text-center font-bold text-lg mb-4">Calendario de Horas Profesionales</h2>
           <p>Total de horas asignadas: {totalHoursByWeek[getWeekId(currentWeek)] || 0} / {maxHoursByWeek[getWeekId(currentWeek)] || 'Sin definir'}</p>
