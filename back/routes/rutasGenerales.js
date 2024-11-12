@@ -17,9 +17,9 @@ router.delete('/profesionales/:id', profesionalController.deleteProfesional);
 // Rutas para Horas Semanales
 router.post('/horas-semanales', horasSemanalesController.createHorasSemanales);
 router.get('/horas-semanales', horasSemanalesController.getAllHorasSemanales);
-router.get('/horas-semanales/:id', horasSemanalesController.getHorasSemanalesById);
-router.put('/horas-semanales/:id', horasSemanalesController.updateHorasSemanales);
-router.delete('/horas-semanales/:id', horasSemanalesController.deleteHorasSemanales);
+router.get('/horas-semanales/:weekId', horasSemanalesController.getHorasSemanalesById);
+router.put('/horas-semanales/:weekId', horasSemanalesController.updateHorasSemanales);
+router.delete('/horas-semanales/:weekId', horasSemanalesController.deleteHorasSemanales);
 
 // Rutas para Horas Diarias
 router.post('/horas-diarias', horasDiariasController.createHorasDiarias);
