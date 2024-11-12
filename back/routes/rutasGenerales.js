@@ -4,7 +4,6 @@ const router = express.Router();
 // Importar los controladores
 const profesionalController = require('../controllers/profesionalController');
 const horasSemanalesController = require('../controllers/horasSemanalesController');
-const horasDiariasController = require('../controllers/horasDiariasController');
 const sesionesController = require('../controllers/sesionesController');
 
 // Rutas para Profesional
@@ -20,13 +19,6 @@ router.get('/horas-semanales', horasSemanalesController.getAllHorasSemanales);
 router.get('/horas-semanales/:weekId', horasSemanalesController.getHorasSemanalesById);
 router.put('/horas-semanales/:weekId', horasSemanalesController.updateHorasSemanales);
 router.delete('/horas-semanales/:weekId', horasSemanalesController.deleteHorasSemanales);
-
-// Rutas para Horas Diarias
-router.post('/horas-diarias', horasDiariasController.createHorasDiarias);
-router.get('/horas-diarias', horasDiariasController.getAllHorasDiarias);
-router.get('/horas-diarias/:id', horasDiariasController.getHorasDiariasById);
-router.put('/horas-diarias/:id', horasDiariasController.updateHorasDiarias);
-router.delete('/horas-diarias/:id', horasDiariasController.deleteHorasDiarias);
 
 // Rutas para Sesiones
 router.post('/sesiones', sesionesController.createSesion);

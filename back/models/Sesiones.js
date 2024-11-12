@@ -4,7 +4,6 @@ const SesionesSchema = new mongoose.Schema({
     start: { type: Date, required: true },
     end: { type: Date, required: true },
     horas: { type: Number, required: true },
-    horasDiarias: { type: mongoose.Schema.Types.ObjectId, ref: 'HorasDiarias' }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Sesiones', SesionesSchema);
