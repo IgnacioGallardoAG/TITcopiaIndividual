@@ -4,7 +4,7 @@
   "description": "```\r cd ./front\r npm install\r npm start\r ```",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon back/Tit01-05_server.js",
+    "dev": "nodemon back/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

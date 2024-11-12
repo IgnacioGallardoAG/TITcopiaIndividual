@@ -7,7 +7,7 @@ exports.createProfesional = async (req, res) => {
         await profesional.save();
         res.status(201).json(profesional);
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(400).json({ message: 'Error al crear el profesional', error: error.message });
     }
 };
 

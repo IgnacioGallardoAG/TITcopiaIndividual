@@ -5,6 +5,9 @@ const cors = require('cors');
 const eventsRouter = require('./routes/rutasGenerales');
 
 const app = express();
+app.use(cors({ origin: 'http://localhost:3001' }));
+app.use(express.json());
+
 
 // Conexión a MongoDB
 mongoose.connect('mongodb://localhost:27017/dbTIT', {
@@ -20,5 +23,5 @@ app.use('/api', eventsRouter);
 // Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    onsole.log(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
