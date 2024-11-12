@@ -24,12 +24,10 @@ function CalendarComponent({ profesionalId }) {
   const [maxHoursByWeek, setMaxHoursByWeek] = useState({});
   const [currentWeek, setCurrentWeek] = useState(moment().startOf('week'));
 
-  // Función para obtener el ID de la semana
   const getWeekId = useCallback((date) => moment(date).startOf('week').format('YYYY-MM-DD'), []);
 
-  // Obtener horas semanales de HorasSemanales
   const fetchWeeklyHours = useCallback(async (weekId) => {
-    if (!profesionalId) return;  // Verificar que profesionalId esté definido
+    if (!profesionalId) return;
     try {
       const res = await axios.get(`http://localhost:3000/api/horas-semanales/${weekId}`, {
         params: { profesionalId },
@@ -44,16 +42,17 @@ function CalendarComponent({ profesionalId }) {
     }
   }, [profesionalId, getWeekId]);
 
-  // Cargar sesiones (events) y horas semanales
   useEffect(() => {
-    if (!profesionalId) return;  // Solo cargar si profesionalId está definido
+    if (!profesionalId) return;
 
     const fetchEvents = async () => {
       try {
-        const res = await axios.get('http://localhost:3000/api/sesiones');
+        const res = await axios.get('http://localhost:3000/api/sesiones', {
+          params: { profesionalId }
+        });
         const adjustedEvents = res.data.map(event => ({
           ...event,
-          title: '', // Deja el título vacío para las sesiones
+          title: '', 
           start: moment.utc(event.start).local().toDate(),
           end: moment.utc(event.end).local().toDate(),
         }));
@@ -67,10 +66,9 @@ function CalendarComponent({ profesionalId }) {
     fetchWeeklyHours(getWeekId(currentWeek));
   }, [currentWeek, fetchWeeklyHours, getWeekId, profesionalId]);
 
-  // Manejo de selección de rango en el calendario
   const handleSelectSlot = ({ start, end }) => {
     const weekId = getWeekId(start);
-    const hoursDiff = (new Date(end) - new Date(start)) / (1000 * 60 * 60); // Diferencia en horas
+    const hoursDiff = (new Date(end) - new Date(start)) / (1000 * 60 * 60);
     const totalHours = totalHoursByWeek[weekId] || 0;
     const maxHours = maxHoursByWeek[weekId] || 0;
 
@@ -83,44 +81,33 @@ function CalendarComponent({ profesionalId }) {
     setIsModalOpen(true);
   };
 
-  // Manejo de eventos
   const handleSaveEvent = async () => {
     try {
-      let res;
       const weekId = getWeekId(newEvent.start);
-      const oldWeekId = selectedEvent ? getWeekId(selectedEvent.start) : null;
       const newEventHours = (new Date(newEvent.end) - new Date(newEvent.start)) / (1000 * 60 * 60);
-      const oldEventHours = selectedEvent
-        ? (new Date(selectedEvent.end) - new Date(selectedEvent.start)) / (1000 * 60 * 60)
-        : 0;
-
-      let updatedTotalHours = totalHoursByWeek[weekId] || 0;
-
-      if (selectedEvent && oldWeekId === weekId) {
-        updatedTotalHours -= oldEventHours;
-      }
-      updatedTotalHours += newEventHours;
 
       if (selectedEvent) {
-        res = await axios.put(`http://localhost:3000/api/sesiones/${selectedEvent._id}`, {
+        const res = await axios.put(`http://localhost:3000/api/sesiones/${selectedEvent._id}`, {
           start: moment(newEvent.start).utc().toDate(),
           end: moment(newEvent.end).utc().toDate(),
         });
         setEvents(events.map(evt => (evt._id === selectedEvent._id ? res.data : evt)));
       } else {
-        res = await axios.post('http://localhost:3000/api/sesiones', {
+        const res = await axios.post('http://localhost:3000/api/sesiones', {
           start: moment(newEvent.start).utc().toDate(),
           end: moment(newEvent.end).utc().toDate(),
-          profesionalId,  // Incluye el profesionalId para registrar la sesión
+          profesional: profesionalId,
+          horas: newEventHours,
         });
         setEvents([...events, res.data]);
       }
 
+      const updatedTotalHours = (totalHoursByWeek[weekId] || 0) + newEventHours;
       await axios.post('http://localhost:3000/api/horas-semanales', {
         weekId,
         horasSemanalesMaximas: maxHoursByWeek[weekId],
         totalHorasTrabajadas: updatedTotalHours,
-        profesional: profesionalId,  // Incluye el profesionalId en el registro
+        profesional: profesionalId,
       });
 
       setTotalHoursByWeek({ ...totalHoursByWeek, [weekId]: updatedTotalHours });
@@ -128,6 +115,17 @@ function CalendarComponent({ profesionalId }) {
       setSelectedEvent(null);
     } catch (error) {
       console.error('Error al guardar el evento:', error);
+    }
+  };
+
+  const handleDeleteEvent = async () => {
+    try {
+      await axios.delete(`http://localhost:3000/api/sesiones/${selectedEvent._id}`);
+      setEvents(events.filter(evt => evt._id !== selectedEvent._id));
+      setIsModalOpen(false);
+      setSelectedEvent(null);
+    } catch (error) {
+      console.error('Error al eliminar el evento:', error);
     }
   };
 
@@ -166,16 +164,7 @@ function CalendarComponent({ profesionalId }) {
             setNewEvent={setNewEvent}
             handleSaveEvent={handleSaveEvent}
             setIsModalOpen={setIsModalOpen}
-            handleDeleteEvent={async () => {
-              try {
-                await axios.delete(`http://localhost:3000/api/sesiones/${selectedEvent._id}`);
-                setEvents(events.filter(evt => evt._id !== selectedEvent._id));
-                setIsModalOpen(false);
-                setSelectedEvent(null);
-              } catch (error) {
-                console.error('Error al eliminar el evento:', error);
-              }
-            }}
+            handleDeleteEvent={handleDeleteEvent}
           />
         )}
       </div>
