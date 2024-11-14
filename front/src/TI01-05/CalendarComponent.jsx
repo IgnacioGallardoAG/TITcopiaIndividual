@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import ModalCalendar from './ModalCalendar';
+import HistoryModal from './HistoryModal';
 
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
 import { DndProvider } from 'react-dnd';
@@ -23,6 +24,8 @@ function CalendarComponent({ profesionalId }) {
   const [totalHoursByWeek, setTotalHoursByWeek] = useState({});
   const [maxHoursByWeek, setMaxHoursByWeek] = useState({});
   const [currentWeek, setCurrentWeek] = useState(moment().startOf('week'));
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [selectedHistory, setSelectedHistory] = useState(null); // Nuevo estado para almacenar el historial seleccionado
 
   const getWeekId = useCallback((date) => moment(date).startOf('week').format('YYYY-MM-DD'), []);
 
@@ -129,6 +132,70 @@ function CalendarComponent({ profesionalId }) {
     }
   };
 
+  const handleSendSchedule = async () => {
+    try {
+      const week_id = getWeekId(currentWeek); // Obtén el ID de la semana actual
+      const eventsToSend = events.map((event) => ({
+        ...event,
+        start: event.start.toISOString(), // Formateo adecuado de fechas
+        end: event.end.toISOString(),
+      }));
+  
+      const response = await axios.post('http://localhost:3000/api/horarios', {
+        week_id,
+        profesionalId,
+        events: eventsToSend,
+      });
+  
+      alert('Horario enviado exitosamente');
+    } catch (error) {
+      console.error('Error al enviar el horario:', error);
+      alert('Error al enviar el horario. Revisa la consola para más detalles.');
+    }
+  };
+  
+  
+  // Previsualizar los eventos seleccionados del historial
+  const handleHistorySelect = (historyEvents) => {
+    const formattedEvents = historyEvents.map((event) => ({
+      ...event,
+      start: new Date(event.start),
+      end: new Date(event.end),
+  }));
+
+  setEvents(formattedEvents); // Actualizar el estado con los eventos seleccionados
+  setSelectedHistory(historyEvents); // Marcar los eventos como seleccionados
+  setIsHistoryModalOpen(false); // Cerrar el modal del historial
+};
+  
+// Enviar horario desde la previsualización
+const handleSendScheduleFromHistory = async () => {
+  try {
+    const week_id = getWeekId(currentWeek); // Nueva semana
+    const eventsToSend = events.map((event) => ({
+      ...event,
+      start: event.start.toISOString(),
+      end: event.end.toISOString(),
+    }));
+
+    await axios.post('http://localhost:3000/api/horarios', {
+      week_id,
+      profesionalId,
+      events: eventsToSend,
+    });
+
+    alert('Horario enviado exitosamente desde el historial');
+  } catch (error) {
+    console.error('Error al enviar el horario desde el historial:', error);
+  }
+};
+
+
+const handleDeleteSchedule = () => {
+  setEvents([]); // Limpia los eventos del calendario
+  setSelectedHistory(null); // Restablece el horario seleccionado
+};
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="w-full max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg">
@@ -158,6 +225,40 @@ function CalendarComponent({ profesionalId }) {
           />
         </div>
 
+        <div className="mt-4">
+          <button
+            onClick={handleSendSchedule} // Enviar los eventos creados
+            className="bg-green-500 text-white px-4 py-2 rounded"
+          >
+            Enviar Horario
+          </button>
+
+          <button
+            onClick={() => setIsHistoryModalOpen(true)} // Abrir el historial
+            className="bg-blue-500 text-white px-4 py-2 rounded ml-2"
+          >
+            Historial
+          </button>
+
+          {/* Mostrar estos botones solo si hay previsualización */}
+          {selectedHistory && (
+            <>
+              <button
+                onClick={handleDeleteSchedule} // Eliminar la previsualización
+                className="bg-red-500 text-white px-4 py-2 rounded ml-2"
+              >
+                Eliminar Horario
+              </button>
+              <button
+                onClick={handleSendScheduleFromHistory} // Enviar horario del historial
+                className="bg-green-500 text-white px-4 py-2 rounded ml-2"
+              >
+                Enviar Horario del Historial
+              </button>
+            </>
+          )}
+        </div>
+
         {isModalOpen && (
           <ModalCalendar
             newEvent={newEvent}
@@ -165,6 +266,14 @@ function CalendarComponent({ profesionalId }) {
             handleSaveEvent={handleSaveEvent}
             setIsModalOpen={setIsModalOpen}
             handleDeleteEvent={handleDeleteEvent}
+          />
+        )}
+
+        {isHistoryModalOpen && (
+          <HistoryModal
+            profesionalId={profesionalId}
+            setIsHistoryModalOpen={setIsHistoryModalOpen}
+            onEventSelect={handleHistorySelect} // Aquí asignamos la función
           />
         )}
       </div>

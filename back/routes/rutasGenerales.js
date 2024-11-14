@@ -5,6 +5,7 @@ const router = express.Router();
 const profesionalController = require('../controllers/profesionalController');
 const horasSemanalesController = require('../controllers/horasSemanalesController');
 const sesionesController = require('../controllers/sesionesController');
+const historialControllers = require('../controllers/historialControllers');
 
 // Rutas para Profesional
 router.post('/profesionales', profesionalController.createProfesional);
@@ -26,5 +27,9 @@ router.get('/sesiones', sesionesController.getAllSesiones);
 router.get('/sesiones/:id', sesionesController.getSesionById);
 router.put('/sesiones/:id', sesionesController.updateSesion);
 router.delete('/sesiones/:id', sesionesController.deleteSesion);
+
+// Rutas para horarios e Historial (Enviar Horario e Historial)
+router.post('/horarios', historialControllers.saveHorario);
+router.get('/horarios/historial', historialControllers.getHistorial);
 
 module.exports = router;
