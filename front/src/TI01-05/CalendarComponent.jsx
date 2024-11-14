@@ -25,9 +25,16 @@ function CalendarComponent({ profesionalId }) {
   const [maxHoursByWeek, setMaxHoursByWeek] = useState({});
   const [currentWeek, setCurrentWeek] = useState(moment().startOf('week'));
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
-  const [selectedHistory, setSelectedHistory] = useState(null); // Nuevo estado para almacenar el historial seleccionado
+  const [selectedHistory, setSelectedHistory] = useState(null);
 
   const getWeekId = useCallback((date) => moment(date).startOf('week').format('YYYY-MM-DD'), []);
+
+  // Esto va a servir para lograr la previsualización del historial
+  const getStartOfWeek = (date) => {
+    const newDate = new Date(date);
+    newDate.setHours(0, 0, 0, 0); 
+    return newDate;
+  };
 
   const fetchWeeklyHours = useCallback(async (weekId) => {
     if (!profesionalId) return;
@@ -157,36 +164,39 @@ function CalendarComponent({ profesionalId }) {
   
   // Previsualizar los eventos seleccionados del historial
   const handleHistorySelect = (historyEvents) => {
-    const formattedEvents = historyEvents.map((event) => ({
+    const startOfNewWeek = getStartOfWeek(currentWeek); // Fecha de inicio de la nueva semana
+    const originalWeekStart = getStartOfWeek(historyEvents[0]?.start); // Fecha de inicio de la semana seleccionada
+  
+    // Diferencia de días entre ambas semanas
+    const dayDifference = Math.floor((startOfNewWeek - originalWeekStart) / (1000 * 60 * 60 * 24));
+  
+    // Ajustar las fechas de los eventos seleccionados
+    const updatedEvents = historyEvents.map((event) => ({
       ...event,
-      start: new Date(event.start),
-      end: new Date(event.end),
-  }));
-
-  setEvents(formattedEvents); // Actualizar el estado con los eventos seleccionados
-  setSelectedHistory(historyEvents); // Marcar los eventos como seleccionados
-  setIsHistoryModalOpen(false); // Cerrar el modal del historial
-};
+      start: new Date(new Date(event.start).getTime() + dayDifference * 24 * 60 * 60 * 1000),
+      end: new Date(new Date(event.end).getTime() + dayDifference * 24 * 60 * 60 * 1000),
+    }));
+  
+    setEvents(updatedEvents); // Actualiza los eventos en el estado
+    setIsHistoryModalOpen(false);
+  };
+  
   
 // Enviar horario desde la previsualización
 const handleSendScheduleFromHistory = async () => {
   try {
-    const week_id = getWeekId(currentWeek); // Nueva semana
-    const eventsToSend = events.map((event) => ({
-      ...event,
-      start: event.start.toISOString(),
-      end: event.end.toISOString(),
-    }));
+    const week_id = getWeekId(currentWeek);
 
     await axios.post('http://localhost:3000/api/horarios', {
       week_id,
       profesionalId,
-      events: eventsToSend,
+      events,
     });
 
     alert('Horario enviado exitosamente desde el historial');
   } catch (error) {
     console.error('Error al enviar el horario desde el historial:', error);
+    alert('Error al enviar el horario. Revisa la consola para más detalles.');
   }
 };
 
@@ -227,30 +237,30 @@ const handleDeleteSchedule = () => {
 
         <div className="mt-4">
           <button
-            onClick={handleSendSchedule} // Enviar los eventos creados
+            onClick={handleSendSchedule} // Envia los eventos creados
             className="bg-green-500 text-white px-4 py-2 rounded"
           >
             Enviar Horario
           </button>
 
           <button
-            onClick={() => setIsHistoryModalOpen(true)} // Abrir el historial
+            onClick={() => setIsHistoryModalOpen(true)} // Abre el historial
             className="bg-blue-500 text-white px-4 py-2 rounded ml-2"
           >
             Historial
           </button>
 
-          {/* Mostrar estos botones solo si hay previsualización */}
+          {/* Muestra estos botones solo si la previsualización está activa */}
           {selectedHistory && (
             <>
               <button
-                onClick={handleDeleteSchedule} // Eliminar la previsualización
+                onClick={handleDeleteSchedule} // Elimina la previsualización
                 className="bg-red-500 text-white px-4 py-2 rounded ml-2"
               >
                 Eliminar Horario
               </button>
               <button
-                onClick={handleSendScheduleFromHistory} // Enviar horario del historial
+                onClick={handleSendScheduleFromHistory} // Envia horario del historial
                 className="bg-green-500 text-white px-4 py-2 rounded ml-2"
               >
                 Enviar Horario del Historial
@@ -273,7 +283,7 @@ const handleDeleteSchedule = () => {
           <HistoryModal
             profesionalId={profesionalId}
             setIsHistoryModalOpen={setIsHistoryModalOpen}
-            onEventSelect={handleHistorySelect} // Aquí asignamos la función
+            onEventSelect={handleHistorySelect}
           />
         )}
       </div>

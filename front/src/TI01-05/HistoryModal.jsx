@@ -20,6 +20,13 @@ function HistoryModal({ profesionalId, setIsHistoryModalOpen, onEventSelect }) {
     fetchHistory();
   }, [profesionalId]);
 
+  const handlePreviewConfirmation = (historyEvents) => {
+    if (window.confirm('¿Quiere ver la previsualización del horario?')) {
+      onEventSelect(historyEvents); // Llama a la función para ajustar las fechas y mostrar la previsualización
+    }
+  };
+  
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg max-w-md w-full">
@@ -33,7 +40,7 @@ function HistoryModal({ profesionalId, setIsHistoryModalOpen, onEventSelect }) {
             return (
               <li key={week.week_id}>
                 <button
-                  onClick={() => onEventSelect(week.events)}
+                  onClick={() => handlePreviewConfirmation(week.events)}
                   className="text-blue-500 underline"
                 >
                   Semana del {startOfWeek.format('DD/MM')} al {endOfWeek.format('DD/MM')}
