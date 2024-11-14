@@ -26,6 +26,8 @@ function CalendarComponent({ profesionalId }) {
   const [currentWeek, setCurrentWeek] = useState(moment().startOf('week'));
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [selectedHistory, setSelectedHistory] = useState(null);
+  const [isPreviewActive, setIsPreviewActive] = useState(false);
+
 
   const getWeekId = useCallback((date) => moment(date).startOf('week').format('YYYY-MM-DD'), []);
 
@@ -178,6 +180,7 @@ function CalendarComponent({ profesionalId }) {
     }));
   
     setEvents(updatedEvents); // Actualiza los eventos en el estado
+    setIsPreviewActive(true); // Activa el estado de previsualización
     setIsHistoryModalOpen(false);
   };
   
@@ -194,6 +197,7 @@ const handleSendScheduleFromHistory = async () => {
     });
 
     alert('Horario enviado exitosamente desde el historial');
+    setIsPreviewActive(false); // Desactiva la previsualización
   } catch (error) {
     console.error('Error al enviar el horario desde el historial:', error);
     alert('Error al enviar el horario. Revisa la consola para más detalles.');
@@ -203,7 +207,8 @@ const handleSendScheduleFromHistory = async () => {
 
 const handleDeleteSchedule = () => {
   setEvents([]); // Limpia los eventos del calendario
-  setSelectedHistory(null); // Restablece el horario seleccionado
+  setSelectedHistory(null); // Restablece el horario
+  setIsPreviewActive(false); // Desactiva la previsualización
 };
 
   return (
@@ -251,7 +256,7 @@ const handleDeleteSchedule = () => {
           </button>
 
           {/* Muestra estos botones solo si la previsualización está activa */}
-          {selectedHistory && (
+          {isPreviewActive && (
             <>
               <button
                 onClick={handleDeleteSchedule} // Elimina la previsualización
